@@ -96,7 +96,15 @@ app.put("/users/:id", async (req, res) => {
 // Route to delete a user by ID
 app.delete("/users/:id", async (req, res) => {
   try {
-    const user = await prisma.user.delete({
+    const user = await prisma.user.findUnique({
+      where: {
+        id: Number(req.params.id),
+      },
+    });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" }); // 404 Not Found status code indicates that the requested resource could not be found
+    }
+    await prisma.user.delete({
       where: {
         id: Number(req.params.id),
       },
