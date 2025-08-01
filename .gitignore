@@ -1,0 +1,15 @@
+# dependencies
+node_modules/
+*.lock
+
+# builds
+dist/
+.next/
+build/
+
+# env
+.env
+.env.*
+
+# OS files
+.DS_Store
