@@ -25,10 +25,10 @@ app.get("/test", (req, res) => {
   }
 });
 
-// Route to get all users
-app.get("/users", async (req, res) => {
+// Route to get all students
+app.get("/students", async (req, res) => {
   try {
-    const users = await prisma.user.findMany(); // This is the user model (database table) from the Prisma schema
+    const users = await prisma.student.findMany(); // This is the user model (database table) from the Prisma schema
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ message: error.message || "Internal Server Error" });
@@ -36,80 +36,99 @@ app.get("/users", async (req, res) => {
 });
 
 // Route to get user by ID
-app.get("/users/:id", async (req, res) => {
+app.get("/students/:id", async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
+    const student = await prisma.student.findUnique({
       where: {
-        id: Number(req.params.id),
+        studentId: Number(req.params.id),
       },
     });
-    res.status(200).json(user);
-  } catch (error) {
-    res.status(500).json({ message: error.message || "Internal Server Error" });
-  }
-});
-
-// Route to create a new user
-app.post("/users", async (req, res) => {
-  try {
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        email: req.body.email,
-      },
-    });
-
-    if (existingUser) {
-      return res.status(409).json({ message: "User already exists" });
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" }); // 404 Not Found status code indicates that the requested resource could not be found
     }
-
-    const user = await prisma.user.create({
-      data: {
-        name: req.body.name,
-        email: req.body.email,
-      },
-    });
-
-    res.status(201).json(user); // 201 Created status code indicates that the request has been fulfilled and a new resource has been created
+    res.status(200).json(student);
   } catch (error) {
     res.status(500).json({ message: error.message || "Internal Server Error" });
   }
 });
 
-// Route to update a user by ID
-app.put("/users/:id", async (req, res) => {
+// Route to create a new student
+app.post("/students", async (req, res) => {
   try {
-    const user = await prisma.user.update({
-      where: {
-        id: Number(req.params.id),
-      },
+    const student = await prisma.student.create({
       data: {
-        name: req.body.name,
-        email: req.body.email,
+        studentName: req.body.studentName,
+        courseName: req.body.courseName,
       },
     });
-    res.status(200).json(user); // 200 OK status code indicates that the request has succeeded
+
+    res.status(201).json(student); // 201 Created status code indicates that the request has been fulfilled and a new resource has been created
   } catch (error) {
     res.status(500).json({ message: error.message || "Internal Server Error" });
   }
 });
 
-// Route to delete a user by ID
-app.delete("/users/:id", async (req, res) => {
+// Route to complete bulk student creation
+app.post("/students/bulk", async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
+    const studentsData = req.body; // Array of student objects
+
+    // Run all creates in parallel for speed!
+    const createdStudents = await Promise.all(
+      studentsData.map(student =>
+        prisma.student.create({
+          data: {
+            studentName: student.studentName,
+            courseName: student.courseName,
+          },
+        })
+      )
+    );
+
+    res.status(201).json(createdStudents);
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Internal Server Error" });
+  }
+});
+
+
+
+// Route to update a student by ID
+app.put("/students/:id", async (req, res) => {
+  try {
+    const student = await prisma.student.update({
       where: {
-        id: Number(req.params.id),
+        studentId: Number(req.params.id),
+      },
+      data: {
+        studentName: req.body.studentName,
+        courseName: req.body.courseName,
       },
     });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" }); // 404 Not Found status code indicates that the requested resource could not be found
+    res.status(200).json(student); // 200 OK status code indicates that the request has succeeded
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Internal Server Error" });
+  }
+});
+
+
+// Route to delete a student by ID
+app.delete("/students/:id", async (req, res) => {
+  try {
+    const student = await prisma.student.findUnique({
+      where: {
+        studentId: Number(req.params.id),
+      },
+    });
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" }); // 404 Not Found status code indicates that the requested resource could not be found
     }
-    await prisma.user.delete({
+    await prisma.student.delete({
       where: {
-        id: Number(req.params.id),
+        studentId: Number(req.params.id),
       },
     });
-    res.status(200).json({ message: "User deleted successfully", user }); // 200 OK status code indicates that the request has succeeded
+    res.status(200).json({ message: "User deleted successfully", student }); // 200 OK status code indicates that the request has succeeded
   } catch (error) {
     res.status(500).json({ message: error.message || "Internal Server Error" });
   }

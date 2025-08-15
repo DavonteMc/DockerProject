@@ -2,96 +2,109 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import CardComponent from "../components/Card";
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
+interface Student {
+  studentId: number;
+  studentName: string;
+  courseName: string;
+  date: Date;
 }
 
 export default function Home() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-  const [users, setUsers] = useState<User[]>([]);
-  const [newUser, setNewUser] = useState<User>({ id: 0, name: "", email: "" });
-  const [updateUser, setUpdateUser] = useState<User>({
-    id: 0,
-    name: "",
-    email: "",
+  const [students, setStudents] = useState<Student[]>([]);
+  const [newStudent, setNewStudent] = useState<Student>({
+    studentId: 0,
+    studentName: "",
+    courseName: "",
+    date: new Date(),
   });
-  const [createUserError, setCreateUserError] = useState<boolean>(false);
-  const [createUserErrorMessage, setCreateUserErrorMessage] =
+  const [updateStudent, setUpdateStudent] = useState<Student>({
+    studentId: 0,
+    studentName: "",
+    courseName: "",
+    date: new Date(),
+  });
+  const [createStudentError, setCreateStudentError] = useState<boolean>(false);
+  const [createStudentErrorMessage, setCreateStudentErrorMessage] =
     useState<string>("");
-  const [updateUserError, setUpdateUserError] = useState<boolean>(false);
-  const [updateUserErrorMessage, setUpdateUserErrorMessage] =
+  const [updateStudentError, setUpdateStudentError] = useState<boolean>(false);
+  const [updateStudentErrorMessage, setUpdateStudentErrorMessage] =
     useState<string>("");
 
   // fetch users
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchStudents = async () => {
       try {
-        const response = await axios.get(`${apiUrl}/users`);
-        setUsers(response.data.reverse()); // Shows the newest user first
+        const response = await axios.get(`${apiUrl}/students`);
+        setStudents(response.data.reverse()); // Shows the newest user first
       } catch (error) {
         console.error("Error fetching users:", error);
       }
     };
-    fetchUsers();
+    fetchStudents();
   }, []);
 
   // create user
-  const createUser = async (e: React.FormEvent<HTMLFormElement>) => {
+  const createStudent = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setCreateUserError(false);
-    setCreateUserErrorMessage("");
-    if (!newUser.name || !newUser.email) {
-      setCreateUserError(true);
-      setCreateUserErrorMessage("Name and Email are required.");
+    setCreateStudentError(false);
+    setCreateStudentErrorMessage("");
+    if (!newStudent.studentName || !newStudent.courseName) {
+      setCreateStudentError(true);
+      setCreateStudentErrorMessage("Name and Course are required.");
       return;
     }
     try {
-      const response = await axios.post(`${apiUrl}/users`, newUser);
-      setUsers([response.data, ...users]); // Add new user to the front of the list
-      setNewUser({ id: 0, name: "", email: "" }); // Reset form
+      const response = await axios.post(`${apiUrl}/students`, newStudent);
+      setStudents([response.data, ...students]); // Add new user to the front of the list
+      setNewStudent({
+        studentId: 0,
+        studentName: "",
+        courseName: "",
+        date: new Date(),
+      }); // Reset form
     } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 409) {
-          console.error("Conflict: User already exists.");
-          setCreateUserError(true);
-          setCreateUserErrorMessage("User already exists.");
-        }
-      }
       console.error("Error creating user:", error);
+      setCreateStudentError(true);
+      setCreateStudentErrorMessage(
+        error instanceof Error ? error.message : "An unknown error occurred."
+      );
     }
   };
 
   // update user
-  const handleUpdateUser = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleUpdateStudent = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setUpdateUserError(false);
-    setUpdateUserErrorMessage("");
-    if (!updateUser.id || !updateUser.name || !updateUser.email) {
-      setUpdateUserError(true);
-      setUpdateUserErrorMessage("ID, Name, and Email are required.");
+    setUpdateStudentError(false);
+    setUpdateStudentErrorMessage("");
+    if (!updateStudent.studentId || !updateStudent.studentName || !updateStudent.courseName) {
+      setUpdateStudentError(true);
+      setUpdateStudentErrorMessage("ID, Name, and Course are required.");
       return;
     }
     try {
-      await axios.put(`${apiUrl}/users/${updateUser.id}`, {
-        name: updateUser.name,
-        email: updateUser.email,
+      await axios.put(`${apiUrl}/students/${updateStudent.studentId}`, {
+        studentName: updateStudent.studentName,
+        courseName: updateStudent.courseName,
       });
-      setUsers(
-        users.map((user) => (user.id === updateUser.id ? updateUser : user))
+      setStudents(
+        students.map((student) => (student.studentId === updateStudent.studentId ? updateStudent : student))
       ); // Update the user in the list
-      setUpdateUser({ id: 0, name: "", email: "" }); // Reset form
+      setUpdateStudent({ studentId: 0, studentName: "", courseName: "", date: new Date() }); // Reset form
     } catch (error) {
       console.error("Error updating user:", error);
+      setUpdateStudentError(true);
+      setUpdateStudentErrorMessage(
+        error instanceof Error ? error.message : "An unknown error occurred."
+      );
     }
   };
 
   // delete user
-  const deleteUser = async (id: number) => {
+  const deleteStudent = async (id: number) => {
     try {
-      await axios.delete(`${apiUrl}/users/${id}`);
-      setUsers(users.filter((user) => user.id !== id)); // Remove the deleted user from the list
+      await axios.delete(`${apiUrl}/students/${id}`);
+      setStudents(students.filter((student) => student.studentId !== id)); // Remove the deleted user from the list
     } catch (error) {
       console.error("Error deleting user:", error);
     }
@@ -101,68 +114,68 @@ export default function Home() {
     <main className="flex flex-col items-center justify-between min-h-screen p-4 bg-[#FAF9F6]">
       <div className="space-y-4 w-full max-w-2xl">
         <h1 className="text-2xl font-bold text-[#001212e2] text-center">
-          User Manager
+          Student Manager
         </h1>
         {/* Create User Form */}
         <form
-          onSubmit={createUser}
+          onSubmit={createStudent}
           className="flex flex-col space-y-4 bg-[#FAF9F6] p-4 rounded-lg shadow-md"
         >
           <h2 className="text-xl font-semibold text-[#001212e2]">
-            Create User
+            Create Student
           </h2>
           <input
             placeholder="Name"
-            value={newUser.name}
-            onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+            value={newStudent.studentName}
+            onChange={(e) => setNewStudent({ ...newStudent, studentName: e.target.value })}
             className="mb-2 w-full border border-gray-300 rounded p-2"
           />
           <input
-            placeholder="Email"
-            value={newUser.email}
-            onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+            placeholder="Course"
+            value={newStudent.courseName}
+            onChange={(e) => setNewStudent({ ...newStudent, courseName: e.target.value })}
             className="mb-2 w-full border border-gray-300 rounded p-2"
           />
           <button
             type="submit"
             className="bg-[#005050] text-white px-4 py-2 rounded hover:bg-[#003a3a]"
           >
-            Create User
+            Create Student
           </button>
-          {createUserError && (
-            <p className="text-[#ffa49c]">{createUserErrorMessage}</p>
+          {createStudentError && (
+            <p className="text-[#ffa49c]">{createStudentErrorMessage}</p>
           )}
         </form>
 
         {/* Update User Form */}
         <form
           className="flex flex-col space-y-4 bg-[#FAF9F6] p-4 rounded-lg shadow-md"
-          onSubmit={handleUpdateUser}
+          onSubmit={handleUpdateStudent}
         >
           <h2 className="text-xl font-semibold text-[#001212e2]">
-            Update User
+            Update Student
           </h2>
           <input
-            placeholder="User ID"
-            value={updateUser.id}
+            placeholder="Student ID"
+            value={updateStudent.studentId}
             onChange={(e) =>
-              setUpdateUser({ ...updateUser, id: Number(e.target.value) })
+              setUpdateStudent({ ...updateStudent, studentId: Number(e.target.value) })
             }
             className="mb-2 w-full border border-gray-300 rounded p-2"
           />
           <input
             placeholder="Name"
-            value={updateUser.name}
+            value={updateStudent.studentName}
             onChange={(e) =>
-              setUpdateUser({ ...updateUser, name: e.target.value })
+              setUpdateStudent({ ...updateStudent, studentName: e.target.value })
             }
             className="mb-2 w-full border border-gray-300 rounded p-2"
           />
           <input
-            placeholder="Email"
-            value={updateUser.email}
+            placeholder="Course"
+            value={updateStudent.courseName}
             onChange={(e) =>
-              setUpdateUser({ ...updateUser, email: e.target.value })
+              setUpdateStudent({ ...updateStudent, courseName: e.target.value })
             }
             className="mb-2 w-full border border-gray-300 rounded p-2"
           />
@@ -170,23 +183,23 @@ export default function Home() {
             type="submit"
             className="bg-[#005050] text-white px-4 py-2 rounded hover:bg-[#003a3a]"
           >
-            Update User
+            Update Student
           </button>
-          {updateUserError && (
-            <p className="text-[#ffa49c]">{updateUserErrorMessage}</p>
+          {updateStudentError && (
+            <p className="text-[#ffa49c]">{updateStudentErrorMessage}</p>
           )}
         </form>
 
-        {/* Display  Users */}
+        {/* Display  Students */}
         <div>
-          {users.map((user) => (
+          {students.map((student) => (
             <div
-              key={user.id}
+              key={student.studentId}
               className="flex items-center justify-between bg-[#FAF9F6] shadow-lg rounded-lg p-2 mb-2 hover:bg-[#487d7d]"
             >
-              <CardComponent card={user} />
+              <CardComponent card={student} />
               <button
-                onClick={() => deleteUser(user.id)}
+                onClick={() => deleteStudent(student.studentId)}
                 className="bg-[#F88379] text-white px-4 py-2 rounded hover:bg-[#ffa49c] hover:border-4 hover:border-[#E26F66]"
               >
                 Delete User

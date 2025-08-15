@@ -1,38 +1,25 @@
-version: "3.9"
-
 services:
-  frontend: 
+  frontend:
     container_name: frontend
-    image: dmcleansait/dockerproject:latest
-    build: 
-      context: ./dockerproject
-      dockerfile: dockerproject.dockerfile
-    ports: 
+    image: dmcleansait/studentfrontend:latest
+    ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:4000
-    restart: always
-    depends_on: 
-      - backend
-      - db 
-  backend: 
+      - NEXT_PUBLIC_API_URL=http://backend:4000
+  backend:
     container_name: backend
-    image: dmcleansait/backend:latest
-    build: 
-      context: ./backend
-      dockerfile: backend.dockerfile
-    ports: 
+    image: dmcleansait/studentrestfulapi:latest
+    ports:
       - "4000:4000"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres?schema=public
+      - DATABASE_URL=postgresql://davonte:password@studentdb:5432/StudentDB?schema=public
   db:
-    container_name: db
+    container_name: studentdb
     image: postgres:15
-    restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
+      POSTGRES_USER: davonte
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: StudentDB
     ports:
       - "5432:5432"
     volumes:
