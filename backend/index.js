@@ -4,6 +4,21 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const app = express();
 
+const { expressjwt: jwt } = require("express-jwt");
+const jwksRsa = require("jwks-rsa");
+
+const checkJwt = jwt({
+  secret: jwksRsa.expressJwtSecret({
+    cache: true,
+    rateLimit: true,
+    jwksRequestsPerMinute: 5,
+    jwksUri: `https://${process.env.AUTH0_DOMAIN}/.well-known/jwks.json`,
+  }),
+  audience: process.env.AUTH0_AUDIENCE,
+  issuer: `https://${process.env.AUTH0_DOMAIN}/`,
+  algorithms: ["RS256"],
+});
+
 // json format for parsing
 app.use(express.json()); // for parsing application/json
 
@@ -12,7 +27,7 @@ app.use(express.json()); // for parsing application/json
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*"); // This allows all origins, meaning it can be accessed from any domain i.e. *
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE"); // This allows the specified HTTP methods
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type"); // This allows the specified headers to be used in requests
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization"); // This allows the specified headers to be used in requests
   next();
 });
 
@@ -53,7 +68,7 @@ app.get("/students/:id", async (req, res) => {
 });
 
 // Route to create a new student
-app.post("/students", async (req, res) => {
+app.post("/students", checkJwt, async (req, res) => {
   try {
     const student = await prisma.student.create({
       data: {
@@ -69,13 +84,13 @@ app.post("/students", async (req, res) => {
 });
 
 // Route to complete bulk student creation
-app.post("/students/bulk", async (req, res) => {
+app.post("/students/bulk", checkJwt, async (req, res) => {
   try {
     const studentsData = req.body; // Array of student objects
 
     // Run all creates in parallel for speed!
     const createdStudents = await Promise.all(
-      studentsData.map(student =>
+      studentsData.map((student) =>
         prisma.student.create({
           data: {
             studentName: student.studentName,
@@ -91,10 +106,8 @@ app.post("/students/bulk", async (req, res) => {
   }
 });
 
-
-
 // Route to update a student by ID
-app.put("/students/:id", async (req, res) => {
+app.put("/students/:id", checkJwt, async (req, res) => {
   try {
     const student = await prisma.student.update({
       where: {
@@ -111,9 +124,8 @@ app.put("/students/:id", async (req, res) => {
   }
 });
 
-
 // Route to delete a student by ID
-app.delete("/students/:id", async (req, res) => {
+app.delete("/students/:id", checkJwt, async (req, res) => {
   try {
     const student = await prisma.student.findUnique({
       where: {

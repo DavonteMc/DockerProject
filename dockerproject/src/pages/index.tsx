@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import CardComponent from "../components/Card";
+import { useAuth0 } from "@auth0/auth0-react";
 
 interface Student {
   studentId: number;
@@ -10,6 +11,13 @@ interface Student {
 }
 
 export default function Home() {
+  const {
+    loginWithRedirect,
+    logout,
+    isAuthenticated,
+    user,
+    getAccessTokenSilently,
+  } = useAuth0();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   const [students, setStudents] = useState<Student[]>([]);
   const [newStudent, setNewStudent] = useState<Student>({
@@ -33,6 +41,7 @@ export default function Home() {
 
   // fetch users
   useEffect(() => {
+    if (!isAuthenticated) return;
     const fetchStudents = async () => {
       try {
         const response = await axios.get(`${apiUrl}/students`);
@@ -42,7 +51,7 @@ export default function Home() {
       }
     };
     fetchStudents();
-  }, []);
+  }, [isAuthenticated]);
 
   // create user
   const createStudent = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -55,7 +64,22 @@ export default function Home() {
       return;
     }
     try {
-      const response = await axios.post(`${apiUrl}/students`, newStudent);
+      // @ts-ignore
+      const token = await getAccessTokenSilently();
+
+      console.log("Token:", token); // Debugging line to check token
+      const response = await axios.post(
+        `${apiUrl}/students`,
+        {
+          studentName: newStudent.studentName,
+          courseName: newStudent.courseName,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       setStudents([response.data, ...students]); // Add new user to the front of the list
       setNewStudent({
         studentId: 0,
@@ -77,20 +101,42 @@ export default function Home() {
     e.preventDefault();
     setUpdateStudentError(false);
     setUpdateStudentErrorMessage("");
-    if (!updateStudent.studentId || !updateStudent.studentName || !updateStudent.courseName) {
+    if (
+      !updateStudent.studentId ||
+      !updateStudent.studentName ||
+      !updateStudent.courseName
+    ) {
       setUpdateStudentError(true);
       setUpdateStudentErrorMessage("ID, Name, and Course are required.");
       return;
     }
     try {
-      await axios.put(`${apiUrl}/students/${updateStudent.studentId}`, {
-        studentName: updateStudent.studentName,
-        courseName: updateStudent.courseName,
-      });
+      const token = await getAccessTokenSilently();
+      await axios.put(
+        `${apiUrl}/students/${updateStudent.studentId}`,
+        {
+          studentName: updateStudent.studentName,
+          courseName: updateStudent.courseName,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       setStudents(
-        students.map((student) => (student.studentId === updateStudent.studentId ? updateStudent : student))
+        students.map((student) =>
+          student.studentId === updateStudent.studentId
+            ? updateStudent
+            : student
+        )
       ); // Update the user in the list
-      setUpdateStudent({ studentId: 0, studentName: "", courseName: "", date: new Date() }); // Reset form
+      setUpdateStudent({
+        studentId: 0,
+        studentName: "",
+        courseName: "",
+        date: new Date(),
+      }); // Reset form
     } catch (error) {
       console.error("Error updating user:", error);
       setUpdateStudentError(true);
@@ -103,15 +149,38 @@ export default function Home() {
   // delete user
   const deleteStudent = async (id: number) => {
     try {
-      await axios.delete(`${apiUrl}/students/${id}`);
+      const token = await getAccessTokenSilently();
+
+      await axios.delete(`${apiUrl}/students/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setStudents(students.filter((student) => student.studentId !== id)); // Remove the deleted user from the list
     } catch (error) {
       console.error("Error deleting user:", error);
     }
   };
 
+  if (!isAuthenticated)
+    return (
+      <button
+        className="bg-[#005050] text-white px-4 py-2 rounded hover:bg-[#003a3a] absolute top-5 right-5"
+        onClick={() => loginWithRedirect()}
+      >
+        Log In
+      </button>
+    );
+
   return (
     <main className="flex flex-col items-center justify-between min-h-screen p-4 bg-[#FAF9F6]">
+      <button
+        type="button"
+        className="bg-[#005050] text-white px-4 py-2 rounded hover:bg-[#003a3a] absolute top-5 right-5"
+        onClick={() => logout()}
+      >
+        Logout
+      </button>
       <div className="space-y-4 w-full max-w-2xl">
         <h1 className="text-2xl font-bold text-[#001212e2] text-center">
           Student Manager
@@ -127,13 +196,17 @@ export default function Home() {
           <input
             placeholder="Name"
             value={newStudent.studentName}
-            onChange={(e) => setNewStudent({ ...newStudent, studentName: e.target.value })}
+            onChange={(e) =>
+              setNewStudent({ ...newStudent, studentName: e.target.value })
+            }
             className="mb-2 w-full border border-gray-300 rounded p-2"
           />
           <input
             placeholder="Course"
             value={newStudent.courseName}
-            onChange={(e) => setNewStudent({ ...newStudent, courseName: e.target.value })}
+            onChange={(e) =>
+              setNewStudent({ ...newStudent, courseName: e.target.value })
+            }
             className="mb-2 w-full border border-gray-300 rounded p-2"
           />
           <button
@@ -159,7 +232,10 @@ export default function Home() {
             placeholder="Student ID"
             value={updateStudent.studentId}
             onChange={(e) =>
-              setUpdateStudent({ ...updateStudent, studentId: Number(e.target.value) })
+              setUpdateStudent({
+                ...updateStudent,
+                studentId: Number(e.target.value),
+              })
             }
             className="mb-2 w-full border border-gray-300 rounded p-2"
           />
@@ -167,7 +243,10 @@ export default function Home() {
             placeholder="Name"
             value={updateStudent.studentName}
             onChange={(e) =>
-              setUpdateStudent({ ...updateStudent, studentName: e.target.value })
+              setUpdateStudent({
+                ...updateStudent,
+                studentName: e.target.value,
+              })
             }
             className="mb-2 w-full border border-gray-300 rounded p-2"
           />

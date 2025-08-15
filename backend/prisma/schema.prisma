@@ -10,7 +10,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("`")
+  url      = env("DATABASE_URL")
 }
 
 // User with id as int auto-incrementing primary key
