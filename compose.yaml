@@ -6,6 +6,9 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://backend:4000
+      - NEXT_PUBLIC_AUTH0_DOMAIN=dev-uss2lhpcseeb1iw6.us.auth0.com
+      - NEXT_PUBLIC_AUTH0_CLIENT_ID=sK01Z6PE9XCJqmr
+      - NEXT_PUBLIC_AUTH0_REDIRECT_URI=http://frontend:3000
   backend:
     container_name: backend
     image: dmcleansait/studentrestfulapi:latest
@@ -13,6 +16,8 @@ services:
       - "4000:4000"
     environment:
       - DATABASE_URL=postgresql://davonte:password@studentdb:5432/StudentDB?schema=public
+      - AUTH0_DOMAIN=dev-uss2lhpcseeb1iw6.us.auth0.com
+      - AUTH0_AUDIENCE=https://docker-project/api
   db:
     container_name: studentdb
     image: postgres:15

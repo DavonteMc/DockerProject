@@ -11,13 +11,8 @@ interface Student {
 }
 
 export default function Home() {
-  const {
-    loginWithRedirect,
-    logout,
-    isAuthenticated,
-    user,
-    getAccessTokenSilently,
-  } = useAuth0();
+  const { loginWithRedirect, logout, isAuthenticated, getAccessTokenSilently } =
+    useAuth0();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   const [students, setStudents] = useState<Student[]>([]);
   const [newStudent, setNewStudent] = useState<Student>({
@@ -51,7 +46,7 @@ export default function Home() {
       }
     };
     fetchStudents();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, apiUrl]);
 
   // create user
   const createStudent = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -64,7 +59,6 @@ export default function Home() {
       return;
     }
     try {
-      // @ts-ignore
       const token = await getAccessTokenSilently();
 
       console.log("Token:", token); // Debugging line to check token

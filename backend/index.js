@@ -19,6 +19,13 @@ const checkJwt = jwt({
   algorithms: ["RS256"],
 });
 
+const rateLimit = require("express-rate-limit");
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 10, // limit each IP to 10 requests per windowMs
+  message: "Too many requests from this IP, please try again after a minute",
+});
+
 // json format for parsing
 app.use(express.json()); // for parsing application/json
 
@@ -41,7 +48,7 @@ app.get("/test", (req, res) => {
 });
 
 // Route to get all students
-app.get("/students", async (req, res) => {
+app.get("/students", limiter, async (req, res) => {
   try {
     const users = await prisma.student.findMany(); // This is the user model (database table) from the Prisma schema
     res.status(200).json(users);
@@ -51,7 +58,7 @@ app.get("/students", async (req, res) => {
 });
 
 // Route to get user by ID
-app.get("/students/:id", async (req, res) => {
+app.get("/students/:id", limiter, async (req, res) => {
   try {
     const student = await prisma.student.findUnique({
       where: {
@@ -68,7 +75,7 @@ app.get("/students/:id", async (req, res) => {
 });
 
 // Route to create a new student
-app.post("/students", checkJwt, async (req, res) => {
+app.post("/students", limiter, checkJwt, async (req, res) => {
   try {
     const student = await prisma.student.create({
       data: {
@@ -84,7 +91,7 @@ app.post("/students", checkJwt, async (req, res) => {
 });
 
 // Route to complete bulk student creation
-app.post("/students/bulk", checkJwt, async (req, res) => {
+app.post("/students/bulk", limiter, checkJwt, async (req, res) => {
   try {
     const studentsData = req.body; // Array of student objects
 
@@ -107,7 +114,7 @@ app.post("/students/bulk", checkJwt, async (req, res) => {
 });
 
 // Route to update a student by ID
-app.put("/students/:id", checkJwt, async (req, res) => {
+app.put("/students/:id", limiter, checkJwt, async (req, res) => {
   try {
     const student = await prisma.student.update({
       where: {
@@ -125,7 +132,7 @@ app.put("/students/:id", checkJwt, async (req, res) => {
 });
 
 // Route to delete a student by ID
-app.delete("/students/:id", checkJwt, async (req, res) => {
+app.delete("/students/:id", limiter, checkJwt, async (req, res) => {
   try {
     const student = await prisma.student.findUnique({
       where: {
